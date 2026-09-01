@@ -3,27 +3,65 @@
     <div class="layout">
       <section class="map-section">
         <OpenStreetMap 
+          ref="mapRef"
           :center="[55.7558, 37.6173]" 
           :zoom="8" 
-          :markers="pointList.markers" 
+          :markers="visibleMarkers" 
           class="custom-map"
         />
       </section>
-
-      <Sidebar @clear="clearMarkers" />
+      <Sidebar 
+        :markers="sidebarMarkers"
+        :checked-ids="checkedIds"
+        @search="handleSearch"
+        @clear="handleClear"
+        @toggle-item="toggleItem"
+      />
     </div>
   </main>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import OpenStreetMap from '@/components/Map.vue'
 import Sidebar from '@/components/Sidebar.vue'
 import pointsData from '@/data/mock.json'
 
-const pointList = ref(pointsData)
-const clearMarkers = () => {
-  pointList.value = []
+const rawMarkers = pointsData.markers || pointsData
+const initialData = Array.isArray(rawMarkers) ? rawMarkers : [rawMarkers]
+
+const mapRef = ref(null)
+const sidebarMarkers = ref([...initialData])
+const checkedIds = ref(initialData.map(item => item.id))
+
+
+const visibleMarkers = computed(() => {
+  return sidebarMarkers.value.filter(item => checkedIds.value.includes(item.id))
+})
+
+// Переключение состояния конкретного чекбокса
+const toggleItem = (id) => {
+  if (checkedIds.value.includes(id)) {
+    checkedIds.value = checkedIds.value.filter(itemId => itemId !== id)
+  } else {
+    checkedIds.value.push(id)
+  }
+}
+
+const handleClear = () => {
+  sidebarMarkers.value = []
+  checkedIds.value = []
+}
+
+// восстанавление карточки, включает чекбоксы и плавно масштабирует карту
+const handleSearch = async () => {
+  sidebarMarkers.value = [...initialData]
+  checkedIds.value = initialData.map(item => item.id)
+
+  await nextTick()
+  if (mapRef.value) {
+    mapRef.value.fitToMarkers()
+  }
 }
 </script>
 

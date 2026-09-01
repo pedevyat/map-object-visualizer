@@ -26,8 +26,38 @@ const mapContainer = ref(null)
 let map = null
 let markerLayerGroup = null
 
+// функция для центрирования карты по маркерам
+const centerMapByMarkers = (animate = true) => {
+  if (!map || !props.markers) return
+
+  const list = Array.isArray(props.markers) 
+    ? props.markers 
+    : (props.markers.markers || [props.markers])
+
+  const validCoords = list
+    .filter(item => item && item.latitude !== undefined && item.longitude !== undefined)
+    .map(item => [item.latitude, item.longitude])
+
+  if (validCoords.length === 0) return
+
+  if (validCoords.length === 1) {
+    map.setView(validCoords[0], props.zoom, { animate })
+    return
+  }
+  const bounds = L.latLngBounds(validCoords)
+
+  if (bounds.isValid()) {
+    map.fitBounds(bounds, { 
+      padding: [50, 50], 
+      animate, 
+      duration: animate ? 1 : 0 
+    })
+  }
+}
+
 const initMap = () => {
   map = L.map(mapContainer.value).setView(props.center, props.zoom)
+
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -35,26 +65,25 @@ const initMap = () => {
 
   markerLayerGroup = L.layerGroup().addTo(map)
   renderMarkers()
+  centerMapByMarkers(false)
 }
 
 // цвет маркера в зависимости от title
 const getColorFromTitle = (title) => {
-  // Константы алгоритма FNV-1a (32-bit)
+  if (!title) return '#3388ff'
+
   let hash = 0x811c9dc5
   for (let i = 0; i < title.length; i++) {
     hash ^= title.charCodeAt(i)
     hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24)
   }
 
-  // Принудительно переводим в 32-битное беззнаковое целое
   hash = hash >>> 0
 
-  // Извлекаем RGB каналы из байтов хеша
   const r = (hash & 0xFF0000) >> 16
   const g = (hash & 0x00FF00) >> 8
   const b = hash & 0x0000FF
 
-  // Переводим в HEX
   const toHex = (c) => c.toString(16).padStart(2, '0')
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`
 }
@@ -81,7 +110,6 @@ const renderMarkers = () => {
 
   if (!props.markers) return
 
-  // Приводим входные данные к массиву и фильтруем валидные объекты с координатами
   const rawList = Array.isArray(props.markers) 
     ? props.markers 
     : (props.markers.markers || [props.markers])
@@ -90,7 +118,6 @@ const renderMarkers = () => {
     (item) => item && item.latitude !== undefined && item.longitude !== undefined
   )
 
-  // группируем маркеры по полю title
   const groups = {}
 
   validItems.forEach((item, originalIndex) => {
@@ -105,23 +132,17 @@ const renderMarkers = () => {
     })
   })
 
-  // отрисовываем маркеры и соединительные линии для каждой группы
   Object.entries(groups).forEach(([title, items]) => {
-    // Сортируем точки по возрастанию id 
     items.sort((a, b) => (a._sortKey > b._sortKey ? 1 : -1))
 
-    // Получаем единый цвет для этой группы
     const groupColor = getColorFromTitle(title)
     const customIcon = createCustomIcon(groupColor)
-
-    // Массив координат для построения линии
     const latLngs = []
 
     items.forEach((item) => {
       const coords = [item.latitude, item.longitude]
       latLngs.push(coords)
 
-      // Отрисовка маркера
       const marker = L.marker(coords, { icon: customIcon })
       const popupContent = `<b>${item.title || ''}</b><br>${item.description || ''}`
       marker.bindPopup(popupContent)
@@ -129,7 +150,6 @@ const renderMarkers = () => {
       marker.addTo(markerLayerGroup)
     })
 
-    // Если в группе 2 и более точек строим polyline
     if (latLngs.length >= 2) {
       const polyline = L.polyline(latLngs, {
         color: groupColor,
@@ -143,12 +163,16 @@ const renderMarkers = () => {
   })
 }
 
+defineExpose({ 
+  fitToMarkers: () => centerMapByMarkers(true),
+  centerMapByMarkers 
+})
+
 watch(() => props.markers, renderMarkers, { deep: true })
 
 onMounted(() => {
   initMap()
 })
-
 
 onUnmounted(() => {
   if (map) {
@@ -160,8 +184,7 @@ onUnmounted(() => {
 <style scoped>
 .map-container {
   width: 100%;
-  height: 400px;
-  border-radius: 8px;
+  height: 100%;
   overflow: hidden;
 }
 </style>
