@@ -79,27 +79,69 @@ const renderMarkers = () => {
   if (!markerLayerGroup) return
   markerLayerGroup.clearLayers()
 
-  // Если props.markers не передан или null — выходим
   if (!props.markers) return
 
-  // Если пришел один объект вместо массива — оборачиваем его в массив [props.markers]
-  const list = Array.isArray(props.markers) ? props.markers : [props.markers]
+  // Приводим входные данные к массиву и фильтруем валидные объекты с координатами
+  const rawList = Array.isArray(props.markers) 
+    ? props.markers 
+    : (props.markers.markers || [props.markers])
 
-  list.forEach((item) => {
-    if (item && item.latitude && item.longitude) {
-      const markerColor = getColorFromTitle(item.title)
-      const customIcon = createCustomIcon(markerColor)
+  const validItems = rawList.filter(
+    (item) => item && item.latitude !== undefined && item.longitude !== undefined
+  )
 
-      const marker = L.marker([item.latitude, item.longitude], { icon: customIcon })
+  // группируем маркеры по полю title
+  const groups = {}
 
+  validItems.forEach((item, originalIndex) => {
+    const titleKey = item.title
+
+    if (!groups[titleKey]) {
+      groups[titleKey] = []
+    }
+    groups[titleKey].push({
+      ...item,
+      _sortKey: item.id !== undefined ? item.id : originalIndex
+    })
+  })
+
+  // отрисовываем маркеры и соединительные линии для каждой группы
+  Object.entries(groups).forEach(([title, items]) => {
+    // Сортируем точки по возрастанию id 
+    items.sort((a, b) => (a._sortKey > b._sortKey ? 1 : -1))
+
+    // Получаем единый цвет для этой группы
+    const groupColor = getColorFromTitle(title)
+    const customIcon = createCustomIcon(groupColor)
+
+    // Массив координат для построения линии
+    const latLngs = []
+
+    items.forEach((item) => {
+      const coords = [item.latitude, item.longitude]
+      latLngs.push(coords)
+
+      // Отрисовка маркера
+      const marker = L.marker(coords, { icon: customIcon })
       const popupContent = `<b>${item.title || ''}</b><br>${item.description || ''}`
       marker.bindPopup(popupContent)
-
+      
       marker.addTo(markerLayerGroup)
-    }
-  })  
-}
+    })
 
+    // Если в группе 2 и более точек строим polyline
+    if (latLngs.length >= 2) {
+      const polyline = L.polyline(latLngs, {
+        color: groupColor,
+        weight: 3,
+        opacity: 0.8,
+        smoothFactor: 1
+      })
+
+      polyline.addTo(markerLayerGroup)
+    }
+  })
+}
 
 watch(() => props.markers, renderMarkers, { deep: true })
 
