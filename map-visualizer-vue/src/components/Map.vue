@@ -41,12 +41,23 @@ const renderMarkers = () => {
   if (!markerLayerGroup) return
   markerLayerGroup.clearLayers()
 
-  props.markers.forEach((item) => {
-    const marker = L.marker([item.lat, item.lng])
-    if (item.title) {
-      marker.bindPopup(item.title)
+  // Если props.markers не передан или null — выходим
+  if (!props.markers) return
+
+  // Если пришел один объект вместо массива — оборачиваем его в массив [props.markers]
+  const list = Array.isArray(props.markers) ? props.markers : [props.markers]
+
+  list.forEach((item) => {
+    // Проверяем наличие координат перед созданием маркера
+    if (item && item.latitude && item.longitude) {
+      const marker = L.marker([item.latitude, item.longitude])
+      
+      // Добавляем тайтл и описание в поп-ап, если они есть
+      const popupContent = `<b>${item.title || ''}</b><br>${item.description || ''}`
+      marker.bindPopup(popupContent)
+      
+      marker.addTo(markerLayerGroup)
     }
-    marker.addTo(markerLayerGroup)
   })
 }
 

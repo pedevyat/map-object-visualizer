@@ -3,9 +3,9 @@
     <div class="layout">
       <section class="map-section">
         <OpenStreetMap 
-          :center="[59.934280, 30.335098]" 
-          :zoom="12" 
-          :markers="pointList" 
+          :center="[55.7558, 37.6173]" 
+          :zoom="8" 
+          :markers="pointList.markers" 
           class="custom-map"
         />
       </section>
@@ -18,11 +18,9 @@
 <script setup>
 import { ref } from 'vue'
 import OpenStreetMap from '@/components/Map.vue'
+import pointsData from '@/data/mock.json'
 
-const pointList = ref([
-  { lat: 59.934280, lng: 30.335098, title: 'Невский проспект' },
-  { lat: 59.940114, lng: 30.328904, title: 'Эрмитаж' }
-])
+const pointList = ref(pointsData)
 </script>
 
 <style>
