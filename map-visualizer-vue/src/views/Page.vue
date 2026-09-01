@@ -10,7 +10,7 @@
         />
       </section>
 
-      <aside class="sidebar-section"></aside>
+      <Sidebar @clear="clearMarkers" />
     </div>
   </main>
 </template>
@@ -18,9 +18,13 @@
 <script setup>
 import { ref } from 'vue'
 import OpenStreetMap from '@/components/Map.vue'
+import Sidebar from '@/components/Sidebar.vue'
 import pointsData from '@/data/mock.json'
 
 const pointList = ref(pointsData)
+const clearMarkers = () => {
+  pointList.value = []
+}
 </script>
 
 <style>
