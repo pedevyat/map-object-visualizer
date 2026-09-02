@@ -23,6 +23,10 @@
             :checked="checkedIds.includes(item.id)" 
             @change="$emit('toggle-item', item.id)"
           />
+          <span 
+            class="color-dot" 
+            :style="{ backgroundColor: getColorFromTitle(item.title) }"
+          ></span>
           <div class="card-info">
             <strong>{{ item.title }}</strong>
             <p v-if="item.description">{{ item.description }}</p>
@@ -46,6 +50,25 @@ defineProps({
 })
 
 defineEmits(['clear', 'search', 'toggle-item'])
+
+const getColorFromTitle = (title) => {
+  if (!title) return '#3388ff'
+
+  let hash = 0x811c9dc5
+  for (let i = 0; i < title.length; i++) {
+    hash ^= title.charCodeAt(i)
+    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24)
+  }
+
+  hash = hash >>> 0
+
+  const r = (hash & 0xFF0000) >> 16
+  const g = (hash & 0x00FF00) >> 8
+  const b = hash & 0x0000FF
+
+  const toHex = (c) => c.toString(16).padStart(2, '0')
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`
+}
 </script>
 
 <style scoped>
@@ -129,5 +152,13 @@ defineEmits(['clear', 'search', 'toggle-item'])
   margin: 4px 0 0 0;
   font-size: 12px;
   color: #6c757d;
+}
+
+.color-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
 }
 </style>
