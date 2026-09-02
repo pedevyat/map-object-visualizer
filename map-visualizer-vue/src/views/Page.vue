@@ -16,6 +16,7 @@
         @search="handleSearch"
         @clear="handleClear"
         @toggle-item="toggleItem"
+        @select-item="handleSelectItem"
       />
     </div>
   </main>
@@ -46,6 +47,19 @@ const toggleItem = (id) => {
   } else {
     checkedIds.value.push(id)
   }
+}
+
+// Обработчик клика по карточке
+const handleSelectItem = (id) => {
+  if (!checkedIds.value.includes(id)) {
+    checkedIds.value.push(id)
+  }
+
+  nextTick(() => {
+    if (mapRef.value) {
+      mapRef.value.focusMarker(id)
+    }
+  })
 }
 
 const handleClear = () => {

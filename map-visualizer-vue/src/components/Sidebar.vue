@@ -16,11 +16,13 @@
         v-for="item in markers" 
         :key="item.id" 
         class="card"
+        @click="$emit('select-item', item.id)"
       >
-        <label class="card-label">
+        <div class="card-content">
           <input 
             type="checkbox" 
             :checked="checkedIds.includes(item.id)" 
+            @click.stop
             @change="$emit('toggle-item', item.id)"
           />
           <span 
@@ -31,7 +33,7 @@
             <strong>{{ item.title }}</strong>
             <p v-if="item.description">{{ item.description }}</p>
           </div>
-        </label>
+        </div>
       </div>
     </div>
   </aside>
@@ -51,7 +53,7 @@ defineProps({
   }
 })
 
-defineEmits(['clear', 'search', 'toggle-item'])
+defineEmits(['clear', 'search', 'toggle-item', 'select-item'])
 
 </script>
 
@@ -117,9 +119,16 @@ defineEmits(['clear', 'search', 'toggle-item'])
   padding: 12px;
   border-radius: 6px;
   border: 1px solid #dee2e6;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.card-label {
+.card:hover {
+  background-color: #f1f3f5;
+  border-color: #ced4da;
+}
+
+.card-content {
   display: flex;
   align-items: flex-start;
   gap: 10px;

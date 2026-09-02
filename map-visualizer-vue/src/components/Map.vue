@@ -85,9 +85,13 @@ const createCustomIcon = (color) => {
   })
 }
 
+const markerInstances = {}
+
 const renderMarkers = () => {
   if (!markerLayerGroup) return
   markerLayerGroup.clearLayers()
+
+  Object.keys(markerInstances).forEach(key => delete markerInstances[key])
 
   if (!props.markers) return
 
@@ -129,6 +133,11 @@ const renderMarkers = () => {
       marker.bindPopup(popupContent)
       
       marker.addTo(markerLayerGroup)
+
+      // Сохраняем ссылку на маркер по его id
+      if (item.id !== undefined) {
+        markerInstances[item.id] = marker
+      }
     })
 
     if (latLngs.length >= 2) {
@@ -144,9 +153,20 @@ const renderMarkers = () => {
   })
 }
 
+// метод для центрирования карты и открытия попапа конкретного маркера
+const focusMarker = (id) => {
+  const targetMarker = markerInstances[id]
+  if (!targetMarker || !map) return
+
+  const latLng = targetMarker.getLatLng()
+  targetMarker.openPopup()
+  map.panTo(latLng, { animate: true, duration: 0.8 })
+}
+
 defineExpose({ 
   fitToMarkers: () => centerMapByMarkers(true),
-  centerMapByMarkers 
+  centerMapByMarkers,
+  focusMarker
 })
 
 watch(() => props.markers, renderMarkers, { deep: true })
