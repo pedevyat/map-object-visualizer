@@ -21,17 +21,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
 
       - name: Install dependencies
+        working-directory: ./map-visualizer-vue 
         run: npm ci
 
       - name: Build project
+        working-directory: ./map-visualizer-vue 
         run: npm run build
 
       - name: Setup Pages
@@ -40,7 +42,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './map-visualizer-vue/dist' # Укажите точный путь к вашей папки dist
+          path: './map-visualizer-vue/dist'
 
       - name: Deploy to GitHub Pages
         id: deployment
